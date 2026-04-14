@@ -10,13 +10,12 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:#000;overflow:hidden;font-family:-apple-system,sans-serif}
-.arjs-loader{position:fixed;inset:0;background:#0a0804;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.5rem;z-index:999}
+#loader{position:fixed;inset:0;background:#0a0804;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.5rem;z-index:999}
 .logo{font-size:2rem;font-weight:300;color:#FAF6EE;letter-spacing:0.05em}
 .logo em{color:#C9A84C;font-style:italic}
 .bar-wrap{width:160px;height:2px;background:#1a1a1a;border-radius:2px;overflow:hidden}
-.bar{height:100%;background:linear-gradient(90deg,#C9A84C,#E8C97A);animation:ld 5s ease-in-out forwards}
-@keyframes ld{0%{width:0}70%{width:85%}100%{width:100%}}
-.msg{font-size:0.68rem;color:#444;letter-spacing:0.08em}
+.bar{height:100%;background:linear-gradient(90deg,#C9A84C,#E8C97A);width:5%;transition:width 0.5s}
+.msg{font-size:0.68rem;color:#666;letter-spacing:0.08em;text-align:center;max-width:240px;line-height:1.6}
 #hud{position:fixed;inset:0;pointer-events:none;z-index:50}
 .logo-hud{position:absolute;top:max(20px,env(safe-area-inset-top));left:20px;font-size:1rem;color:white;font-weight:300;text-shadow:0 1px 8px rgba(0,0,0,0.9)}
 .logo-hud em{color:#C9A84C;font-style:italic}
@@ -43,10 +42,10 @@ body{background:#000;overflow:hidden;font-family:-apple-system,sans-serif}
 </head>
 <body>
 
-<div class="arjs-loader" id="loader">
+<div id="loader">
   <div class="logo">Bri<em>n</em></div>
-  <div class="bar-wrap"><div class="bar"></div></div>
-  <div class="msg" id="msg">Chargement AR...</div>
+  <div class="bar-wrap"><div class="bar" id="bar"></div></div>
+  <div class="msg" id="msg">Chargement des marqueurs AR...<br>Patientez 20-30 secondes</div>
 </div>
 
 <div id="hud">
@@ -91,29 +90,45 @@ body{background:#000;overflow:hidden;font-family:-apple-system,sans-serif}
 <script>
 let animRunning = false;
 let animTimers = [];
+let progress = 5;
 
 function dbg(msg) {
   document.getElementById('debug').textContent = msg;
   console.log('[BRIN]', msg);
 }
 
+function setProgress(pct, msg) {
+  document.getElementById('bar').style.width = pct + '%';
+  if (msg) document.getElementById('msg').innerHTML = msg;
+}
+
+// Simulate progress while waiting
+const progressInterval = setInterval(() => {
+  if (progress < 90) {
+    progress += 2;
+    setProgress(progress, 'Chargement des marqueurs AR...<br>' + Math.round(progress) + '%');
+  }
+}, 600);
+
 window.addEventListener('arjs-nft-loaded', () => {
+  clearInterval(progressInterval);
+  setProgress(100, 'Prêt !');
   dbg('NFT markers loaded OK !');
-  document.getElementById('loader').style.display = 'none';
-  document.getElementById('fisher-overlay').style.display = 'block';
+  setTimeout(() => {
+    document.getElementById('loader').style.display = 'none';
+    document.getElementById('fisher-overlay').style.display = 'block';
+  }, 500);
 });
 
-window.addEventListener('arjs-video-loaded', () => {
-  dbg('Camera video loaded');
-});
-
+// Extended timeout — 45 seconds
 setTimeout(() => {
+  clearInterval(progressInterval);
   if (document.getElementById('loader').style.display !== 'none') {
-    dbg('Timeout — hiding loader');
+    dbg('Timeout 45s — forcing start');
     document.getElementById('loader').style.display = 'none';
     document.getElementById('fisher-overlay').style.display = 'block';
   }
-}, 8000);
+}, 45000);
 
 const nft = document.getElementById('nft-target');
 nft.addEventListener('markerFound', () => {
